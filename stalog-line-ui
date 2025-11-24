@@ -1,0 +1,13 @@
+import axios from "axios";
+
+export const getTodayTimetable = async (studentId) => {
+  try {
+    const res = await axios.get(
+      `https://example.com/api/timetable/today?student_id=${studentId}`
+    );
+    return res.data;
+  } catch (error) {
+    console.error("APIエラー:", error);
+    return null;
+  }
+};
