@@ -1,39 +1,26 @@
-async function fetchTimetable() {
-  const today = new Date().toISOString().split("T")[0];
-  const studentId = "12345"; // 仮のID（後でLINE連携に差し替え）
+const liffId = "2008567223-nEGAWAee"; // LINE Developers で発行された LIFF ID
 
-  const url = `https://example.com/api/timetable?date=${today}&student_id=${studentId}`;
-
+async function initLiff() {
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("APIエラー");
-
-    const data = await res.json();
-    displayTimetable(data);
-  } catch (error) {
-    document.getElementById("timetable").innerHTML =
-      "<p>データ取得に失敗しました。</p>";
+    await liff.init({ liffId });
+    // LIFFが初期化されるとIDトークンやアクセストークンが取れる場合がある
+    const idTokenPayload = liff.getDecodedIDToken();
+    console.log("decoded ID token:", idTokenPayload);
+    // 例：userId を使う（payload.sub や liff.getContext() 参照）
+    const userId = idTokenPayload ? idTokenPayload.sub : null;
+    // サーバにIDトークンを送って本人確認／紐付け処理を行う
+    if (idTokenPayload) {
+      await fetch("/api/link_line_user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: liff.getIDToken() })
+      });
+    }
+  } catch (err) {
+    console.error("LIFF init error", err);
   }
 }
 
-function displayTimetable(timetable) {
-  const container = document.getElementById("timetable");
-  container.innerHTML = "";
-
-  timetable.forEach(t => {
-    const div = document.createElement("div");
-    div.classList.add("card");
-    div.innerHTML = `
-      <h3>${t.period}限：${t.subject}</h3>
-      <p>教室：${t.room}</p>
-    `;
-    container.appendChild(div);
-  });
-}
-
-liff.init({ liffId: "あなたのLIFF ID" }).then(() => {
-  const userId = liff.getDecodedIDToken().sub;
-  console.log("LINEユーザーID:", userId);
+window.addEventListener("load", () => {
+  initLiff();
 });
-
-fetchTimetable();
